@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Leave the following line as-is -->
+<extension version="4.0" type="plugin" group="system" method="upgrade">
+	<name>Joomla - Zapier Plugin (do not publish)</name>
+	<!-- fill these out however you'd like -->
+	<author>Nate Covington</author>
+	<creationDate>April 2024</creationDate>
+	<copyright>Copyright (C) 2024 Covington Creations LLC</copyright>
+	<license>MIT</license>
+	<authorEmail>nate@covingtoncreations.com</authorEmail>
+	<authorUrl>www.covingtoncreations.com</authorUrl>
+	<version>1.0</version>
+	<!-- you can just type something here, but you should really use language constants -->
+	<description>PLG_SYSTEM_ZAPIER_XML_DESCRIPTION</description>
+	<!-- you must put everything here as it is in your directory/installable zip file or it won't install properly-->
+	<files>
+		<!-- the most important file in the plugin, after this file -->
+		<filename plugin="zapier">zapier.php</filename>
+
+		<!-- just some more notes -->
+		<file>readme.md</file>
+		
+		<!-- the folders, no need to define each file in these folders -->
+		<folder>language</folder>
+		<folder>endpoints</folder>
+		<folder>css</folder>
+		<folder>js</folder>
+	</files>
+	<!-- but you do have to define your language files -->
+	<languages folder="language">
+		<!-- the sys.ini file loads the plugin name/desc on all backend panel pages -->
+		<language tag="en-GB">en-GB/en-GB.plg_system_zapier.sys.ini</language>
+		<!-- the regular .ini file loads the constants that appear in the individual plugin settings itself -->
+		<language tag="en-GB">en-GB/en-GB.plg_system_zapier.ini</language>
+	</languages>
+	<!-- the config section is to define the config fields that show in the back-end plugin settings for this plugin-->
+	<config>
+	<!-- leave the fields line alone -->
+	<fields name="params">
+		<!-- use fieldset name="basic" for most purposes, create a separate fieldset "advanced" if you want a second tab with more settings-->
+		<fieldset name="basic">
+
+			
+		</fieldset>
+	</fields>
+	</config>
+</extension>
