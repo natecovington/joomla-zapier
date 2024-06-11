@@ -46,13 +46,14 @@ if (curl_errno($ch)) {
 // Close cURL session
 curl_close($ch);
 
-// Check if the response contains the specified error message
-if ($response === '{"errors":[{"title":"Forbidden"}]}') {
+// Check if the response contains the word "Forbidden"
+if (strpos($response, 'Forbidden') !== false) {
     http_response_code(403); // Forbidden
     echo '{ "status": "fail" }';
 } else {
     http_response_code(200); // OK
     echo '{ "status": "success" }';
 }
+
 ?>
 
