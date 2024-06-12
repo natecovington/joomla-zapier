@@ -1,16 +1,23 @@
-<?php 
+<?php
 
 // Function to perform a cURL request
-function performCurlRequest($url, $method = 'GET', $data = null, $token = null) {
+function performCurlRequest($url, $method = 'PATCH', $data = null, $token = null) {
     $ch = curl_init();
 
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    if ($method === 'POST') {
+    if ($method === 'PATCH') {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        if ($data) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        }
+    } elseif ($method === 'POST') {
         curl_setopt($ch, CURLOPT_POST, true);
         if ($data) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         }
+    } elseif ($method === 'GET') {
+        curl_setopt($ch, CURLOPT_HTTPGET, true);
     }
     if ($token) {
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
@@ -46,8 +53,8 @@ if (!isset($_GET['site_url'])) {
 }
 
 // Get the token and site URL from the URL parameter
-$token = $_GET['X-Joomla-Token'];
-$siteUrl = rtrim($_GET['site_url'], '/') . '/';
+$token = htmlspecialchars($_GET['X-Joomla-Token']);
+$siteUrl = rtrim(htmlspecialchars($_GET['site_url']), '/') . '/';
 
 // Check if request body is present
 $requestBody = file_get_contents('php://input');
@@ -59,6 +66,11 @@ if (empty($requestBody)) {
 
 // Decode the JSON data from the request body
 $data = json_decode($requestBody, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(400); // Bad request
+    echo json_encode(array("message" => "Invalid JSON format."));
+    exit();
+}
 
 // Verify if required fields are present
 $requiredFields = ['title', 'body', 'category', 'published'];
@@ -135,32 +147,73 @@ if ($categoryHttpCode >= 200 && $categoryHttpCode < 300) {
     http_response_code($categoryHttpCode);
 }
 
-// Output the final JSON response
-//header('Content-Type: application/json');
-//echo json_encode($output);
+// Get List of Articles
+$articlesEndpoint = $siteUrl . "api/index.php/v1/content/articles";
+list($articlesResponse, $articlesHttpCode) = performCurlRequest($articlesEndpoint, 'GET', null, $token);
 
+// Trim the response to remove any leading/trailing spaces or characters
+$articlesResponse = trim($articlesResponse);
 
-// Prepare data for Joomla article creation
-$joomlaData = array(
-    "alias" => $title, // Use title as alias
-    "introtext" => $body,
-    "catid" => $categoryId,
+// Decode the JSON data from the articles response
+$articlesData = json_decode($articlesResponse, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(500); // Internal Server Error
+    echo json_encode(array("message" => "Failed to decode articles response.", "response" => $articlesResponse));
+    exit();
+}
+
+// Check if data exists and if it contains articles
+if (isset($articlesData['data']) && is_array($articlesData['data']) && count($articlesData['data']) > 0) {
+    $matchingArticleId = null;
+    
+    // Iterate through each article and compare its title with the $title variable
+    foreach ($articlesData['data'] as $article) {
+        if ($article['attributes']['title'] === $title) {
+            $matchingArticleId = $article['id'];
+            break; // Stop iteration once a match is found
+        }
+    }
+    
+    // Output the matching article ID if found
+    if ($matchingArticleId !== null) {
+        // Matching article found
+    } else {
+        http_response_code(404); // Not found
+        echo json_encode(array("message" => "No matching article found."));
+        exit();
+    }
+} else {
+    http_response_code(404); // Not found
+    echo json_encode(array("message" => "No articles found."));
+    exit();
+}
+
+// Matching article ID found from the previous step
+$articleId = $matchingArticleId;
+
+$newData = array(
+    'id' => $articleId,
+    'title' => $title,
+    'alias' => strtolower(str_replace(' ', '-', $title)),
+    'catid' => $categoryId,
+    'articletext' => $body,
+    'introtext' => $body, // Assuming 'introtext' is used for the main content
+    'fulltext' => '', // Assuming no full text
     "language" => "*",
     "metadesc" => "",
     "metakey" => "",
-    "title" => $title,
     "state" => $published ? 1 : 0 // Convert boolean to Joomla state
 );
 
-// Create the article
-$createEndpoint = $siteUrl . "api/index.php/v1/content/articles";
-list($response, $httpCode) = performCurlRequest($createEndpoint, 'POST', $joomlaData, $token);
+// Update the article
+$updateEndpoint = $siteUrl . "api/index.php/v1/content/articles/" . $articleId;
+list($response, $httpCode) = performCurlRequest($updateEndpoint, 'PATCH', $newData, $token);
 
 // Handle response based on HTTP code
 if ($httpCode >= 200 && $httpCode < 300) {
-    echo $response; // Return the actual response from the Joomla API
+    echo json_encode(array("message" => "Success.", "response" => $response));
 } else {
-    echo json_encode(array("message" => "Failed to create article.", "response" => $response));
+    echo json_encode(array("message" => "Failed to update article.", "response" => $response));
     http_response_code($httpCode);
 }
 
