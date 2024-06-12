@@ -76,51 +76,50 @@ $body = $data['body'];
 $category = $data['category'];
 $published = filter_var($data['published'], FILTER_VALIDATE_BOOLEAN); // Convert to boolean
 
-// Define the check endpoint for categories
-$categoryEndpoint = $siteUrl . "api/index.php/v1/content/categories?filter[search]=" . urlencode($category);
+// Get List of Categories
+$categoryEndpoint = $siteUrl . "api/index.php/v1/content/categories";
+list($categoryResponse, $categoryHttpCode) = performCurlRequest($categoryEndpoint, 'GET', null, $token);
 
-// Check if the category exists
-list($response, $httpCode) = performCurlRequest($categoryEndpoint, 'GET', null, $token);
-$existingCategories = json_decode($response, true);
+if ($categoryHttpCode >= 200 && $categoryHttpCode < 300) {
+    //echo $categoryResponse; // Return the list of categories
+} else {
+    echo json_encode(array("message" => "Failed to fetch categories.", "response" => $categoryResponse));
+    http_response_code($categoryHttpCode);
+    exit();
+}
 
-// Find the category ID
-$catid = null;
-if (isset($existingCategories['data']) && is_array($existingCategories['data'])) {
-    foreach ($existingCategories['data'] as $cat) {
-        if (isset($cat['title']) && $cat['title'] === $category) {
-            $catid = $cat['id'];
+// Decode the JSON response
+$responseData = json_decode($categoryResponse, true);
+
+// Check if data is present
+if (isset($responseData['data']) && is_array($responseData['data']) && count($responseData['data']) > 0) {
+    $foundCategory = null;
+    foreach ($responseData['data'] as $categoryItem) {
+        if ($categoryItem['attributes']['title'] == $category) {
+            $foundCategory = $categoryItem;
             break;
         }
     }
-}
 
-// If category doesn't exist, create it
-if (!$catid) {
-    $newCategoryData = array(
-        "title" => $category,
-        "alias" => strtolower(str_replace(' ', '-', $category)), // Generate an alias from the title
-        "extension" => "com_content",
-        "published" => 1
-    );
-
-    $categoryCreationEndpoint = $siteUrl . "api/index.php/v1/content/categories";
-    list($response, $httpCode) = performCurlRequest($categoryCreationEndpoint, 'POST', $newCategoryData, $token);
-    $createdCategory = json_decode($response, true);
-
-    if (isset($createdCategory['data']['id'])) {
-        $catid = $createdCategory['data']['id'];
+    if ($foundCategory) {
+        $categoryId = $foundCategory['id'];
+        $categoryTitle = $foundCategory['attributes']['title'];
+        // disabling this because we have it working now
+        //echo "Category ID: $categoryId, Title: $categoryTitle" . PHP_EOL;
     } else {
-        echo json_encode(array("message" => "Failed to create category.", "response" => $response));
-        http_response_code(500); // Internal Server Error
-        exit();
+        echo "Category '$category' not found.";
     }
+} else {
+    echo "No categories found.";
 }
+
+
 
 // Prepare data for Joomla article creation
 $joomlaData = array(
     "alias" => $title, // Use title as alias
     "articletext" => $body,
-    "catid" => $catid,
+    "catid" => $categoryId,
     "language" => "*",
     "metadesc" => "",
     "metakey" => "",
