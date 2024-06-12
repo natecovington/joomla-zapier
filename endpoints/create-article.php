@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 // Function to perform a cURL request
 function performCurlRequest($url, $method = 'GET', $data = null, $token = null) {
@@ -80,39 +80,64 @@ $published = filter_var($data['published'], FILTER_VALIDATE_BOOLEAN); // Convert
 $categoryEndpoint = $siteUrl . "api/index.php/v1/content/categories";
 list($categoryResponse, $categoryHttpCode) = performCurlRequest($categoryEndpoint, 'GET', null, $token);
 
-if ($categoryHttpCode >= 200 && $categoryHttpCode < 300) {
-    //echo $categoryResponse; // Return the list of categories
-} else {
-    echo json_encode(array("message" => "Failed to fetch categories.", "response" => $categoryResponse));
-    http_response_code($categoryHttpCode);
-    exit();
-}
-
-// Decode the JSON response
 $responseData = json_decode($categoryResponse, true);
+$output = array();
 
-// Check if data is present
-if (isset($responseData['data']) && is_array($responseData['data']) && count($responseData['data']) > 0) {
+if ($categoryHttpCode >= 200 && $categoryHttpCode < 300) {
+    // Check if data is present
     $foundCategory = null;
-    foreach ($responseData['data'] as $categoryItem) {
-        if ($categoryItem['attributes']['title'] == $category) {
-            $foundCategory = $categoryItem;
-            break;
+    if (isset($responseData['data']) && is_array($responseData['data']) && count($responseData['data']) > 0) {
+        foreach ($responseData['data'] as $categoryItem) {
+            if ($categoryItem['attributes']['title'] == $category) {
+                $foundCategory = $categoryItem;
+                break;
+            }
         }
     }
 
     if ($foundCategory) {
         $categoryId = $foundCategory['id'];
         $categoryTitle = $foundCategory['attributes']['title'];
-        // disabling this because we have it working now
-        //echo "Category ID: $categoryId, Title: $categoryTitle" . PHP_EOL;
+        $output = array("message" => "Category found.", "category_id" => $categoryId, "category_title" => $categoryTitle);
     } else {
-        echo "Category '$category' not found.";
+        // Create new category
+        $newCategoryData = array(
+            "access" => 1,
+            "alias" => strtolower(str_replace(' ', '-', $category)),
+            "extension" => "com_content",
+            "language" => "*",
+            "note" => "",
+            "parent_id" => 1, // Adjust this ID as needed
+            "published" => 1,
+            "title" => $category
+        );
+
+        $createCategoryEndpoint = $siteUrl . "api/index.php/v1/content/categories";
+        list($createCategoryResponse, $createCategoryHttpCode) = performCurlRequest($createCategoryEndpoint, 'POST', $newCategoryData, $token);
+
+        if ($createCategoryHttpCode >= 200 && $createCategoryHttpCode < 300) {
+            $newCategoryResponseData = json_decode($createCategoryResponse, true);
+            if (isset($newCategoryResponseData['data'])) {
+                $categoryId = $newCategoryResponseData['data']['id'];
+                $categoryTitle = $newCategoryResponseData['data']['attributes']['title'];
+                $output = array("message" => "New category created.", "category_id" => $categoryId, "category_title" => $categoryTitle);
+            } else {
+                $output = array("message" => "Failed to create category.", "response" => $createCategoryResponse);
+                http_response_code(500);
+            }
+        } else {
+            $output = array("message" => "Failed to create category.", "response" => $createCategoryResponse);
+            http_response_code($createCategoryHttpCode);
+        }
     }
 } else {
-    echo "No categories found.";
+    $output = array("message" => "Failed to fetch categories.", "response" => $categoryResponse);
+    http_response_code($categoryHttpCode);
 }
 
+// Output the final JSON response
+//header('Content-Type: application/json');
+//echo json_encode($output);
 
 
 // Prepare data for Joomla article creation
