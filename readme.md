@@ -4,9 +4,9 @@
 
 This plugin allows you to easily automate the creating of articles to your Joomla site using the Zapier platform.
 
-Developed by:
-Mr Alexandre Jean-Sébastien William ELISÉ
-Mr Nathan Covington of [Covington Creations, LLC](https://www.covingtoncreations.com/)
+## Developed by:
+- Mr Alexandre Jean-Sébastien William ELISÉ
+- Mr Nathan Covington of [Covington Creations, LLC](https://www.covingtoncreations.com/)
 
 (JED Listing pending)
 
