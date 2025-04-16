@@ -1,6 +1,4 @@
 # Joomla Zapier Plugin
-## By: Covington Creations, LLC
-
 
 This plugin allows you to easily automate the creating of articles to your Joomla site using the Zapier platform.
 
