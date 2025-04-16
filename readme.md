@@ -1,7 +1,4 @@
 # Joomla Zapier Plugin
-## By: Covington Creations, LLC
-
-
 This plugin allows you to easily automate the creating of articles to your Joomla site using the Zapier platform.
 
 ## Developed by:
@@ -13,8 +10,6 @@ This plugin allows you to easily automate the creating of articles to your Jooml
 This project is currently in [beta](https://zapier.com/developer/public-invite/202409/f87192b19082430c570041ab862141df/)
 
 Developer note: You can also use the Joomla 4 API directly using standard [Zapier Webhooks](https://zapier.com/features/webhooks).  This plugin is intended to simplify the integration process for end users.
-
-
 
 
 ## MIT LICENSE
